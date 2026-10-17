@@ -1,0 +1,8 @@
+{
+  "name": "QuantBot Studio - Crypto Trading Engine",
+  "description": "Asynchroniczny silnik handlowy i platforma tradingowa z analizą ilościową, zarządzaniem ryzykiem i dashboardem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

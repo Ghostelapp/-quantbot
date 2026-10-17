@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  quantbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quantbot_engine
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./quantbot.db:/app/quantbot.db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
