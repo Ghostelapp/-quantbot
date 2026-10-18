@@ -1035,13 +1035,19 @@ live PnL tracking, manual overrides, and risk telemetry.
 import asyncio
 import threading
 import time
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+
+project_root = str(Path(__file__).resolve().parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from quantbot.config import config
 from quantbot.database import DatabaseManager

@@ -6,15 +6,21 @@ live PnL tracking, manual overrides, and risk telemetry.
 
 import asyncio
 import logging
+import sys
 import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+
+project_root = str(Path(__file__).resolve().parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from quantbot.config import config
 from quantbot.database import DatabaseManager
@@ -44,14 +50,16 @@ if "loop" not in st.session_state:
 
 def start_engine_in_background():
     """Runs the asyncio trading loop in an independent background thread."""
-    def _run():
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        st.session_state.loop = new_loop
-        new_loop.run_until_complete(st.session_state.engine.initialize())
-        new_loop.run_until_complete(st.session_state.engine.run_loop())
+    engine = st.session_state.engine
+    loop = asyncio.new_event_loop()
 
-    if not st.session_state.engine.status.is_running:
+    def _run():
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(engine.initialize())
+        loop.run_until_complete(engine.run_loop())
+
+    if not engine.status.is_running:
+        st.session_state.loop = loop
         t = threading.Thread(target=_run, daemon=True)
         t.start()
         st.session_state.engine_thread = t
@@ -164,7 +172,14 @@ st.divider()
 selected_symbol = st.selectbox("Wybierz walor do analizy technicznej:", config.symbols, index=0)
 
 # Fetch latest candles for plotting
-candles = asyncio.run(st.session_state.engine.fetch_ohlcv_with_retry(selected_symbol, limit=80))
+active_loop = st.session_state.loop
+if active_loop and active_loop.is_running():
+    candles = asyncio.run_coroutine_threadsafe(
+        st.session_state.engine.fetch_ohlcv_with_retry(selected_symbol, limit=80),
+        active_loop,
+    ).result()
+else:
+    candles = asyncio.run(st.session_state.engine.fetch_ohlcv_with_retry(selected_symbol, limit=80))
 
 if candles:
     df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
